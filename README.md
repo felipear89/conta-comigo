@@ -95,6 +95,36 @@ npm run dev
 | `VITE_SUPABASE_ANON_KEY` | Supabase anon/public key |
 | `VITE_API_URL` | Backend URL (default: `http://localhost:8000`) |
 
+## Docker
+
+```bash
+# Copy and fill in all variables
+cp backend/.env.example .env
+
+# Build and start both services
+docker compose up --build
+# Frontend → http://localhost
+# Backend  → http://localhost:8000
+```
+
+The `.env` file at the repo root is used by docker-compose. It needs all backend variables plus the frontend build args:
+
+```env
+# Backend (runtime)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+CORS_ORIGINS=http://localhost
+
+# Frontend (baked into the bundle at build time)
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+VITE_API_URL=http://localhost:8000
+```
+
+> **Note:** Because Vite bakes `VITE_*` variables into the bundle at build time, you must rebuild the frontend image (`docker compose build frontend`) whenever these values change.
+
+---
+
 ## Running tests
 
 ```bash
