@@ -1,0 +1,114 @@
+from pydantic import BaseModel
+from datetime import date
+from typing import Literal
+
+
+class TransactionBase(BaseModel):
+    date: date
+    description: str
+    amount: float
+
+
+class ImportPreviewTransaction(TransactionBase):
+    installment: str | None = None
+    bank_category: str | None = None
+    suggested_category_id: str | None = None
+    category_source: Literal["rule"] | None = None
+
+
+class ConfirmImportRequest(BaseModel):
+    transactions: list[ImportPreviewTransaction]
+    bill_month: date
+
+
+class UpdateCategoryRequest(BaseModel):
+    category_id: str
+
+
+class DeleteTransactionsRequest(BaseModel):
+    ids: list[str]
+
+
+class CategoryOut(BaseModel):
+    id: str
+    name: str
+    color: str
+    icon: str
+
+
+class CategoryCreateRequest(BaseModel):
+    name: str
+    color: str = "#6b7280"
+    icon: str = "💳"
+
+
+class CategoryPatchRequest(BaseModel):
+    name: str | None = None
+    color: str | None = None
+    icon: str | None = None
+
+
+class CategoryRuleOut(BaseModel):
+    id: str
+    keyword: str
+    category_id: str
+    category: CategoryOut | None = None
+
+
+class CategoryRuleCreateRequest(BaseModel):
+    keyword: str
+    category_id: str
+
+
+
+# ── Fixed Costs ───────────────────────────────────────────────────────────────
+
+class FixedCostOverrideOut(BaseModel):
+    month: int
+    amount: float
+
+
+class FixedCostOut(BaseModel):
+    id: str
+    name: str
+    year: int
+    amount: float
+    overrides: list[FixedCostOverrideOut] = []
+
+
+class FixedCostCreateRequest(BaseModel):
+    name: str
+    year: int
+    amount: float
+
+
+class FixedCostPatchRequest(BaseModel):
+    name: str | None = None
+    amount: float | None = None
+
+
+class FixedCostOverrideUpsertRequest(BaseModel):
+    amount: float
+
+
+# ── Forecast ──────────────────────────────────────────────────────────────────
+
+class ForecastItem(BaseModel):
+    description: str
+    amount: float
+    installment: str  # e.g., "8/12"
+
+
+class ForecastMonth(BaseModel):
+    month: str  # "YYYY-MM"
+    total: float
+    items: list[ForecastItem]
+
+
+class TransactionOut(TransactionBase):
+    id: str
+    installment: str | None = None
+    bill_month: date | None = None
+    category_id: str | None
+    category: CategoryOut | None = None
+    created_at: str
