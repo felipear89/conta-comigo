@@ -114,6 +114,8 @@ The `.env` file at the repo root is used by docker-compose. It needs all backend
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 CORS_ORIGINS=http://localhost
+BACKEND_PORT=8000
+FRONTEND_PORT=80
 
 # Frontend (baked into the bundle at build time)
 VITE_SUPABASE_URL=https://your-project.supabase.co
