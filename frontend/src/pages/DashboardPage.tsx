@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
-import { getTransactions, getFixedCosts, getForecast } from '@/services/api'
-import type { Transaction, Category, FixedCost, ForecastMonth } from '@/types'
+import { getTransactions, getFixedCosts, getForecast, getIndividualPayments } from '@/services/api'
+import type { Transaction, Category, FixedCost, ForecastMonth, IndividualPayment } from '@/types'
 import type { Route } from '@/App'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -46,6 +46,7 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [fixedCosts, setFixedCosts] = useState<FixedCost[]>([])
   const [forecast, setForecast] = useState<ForecastMonth[]>([])
+  const [individualPayments, setIndividualPayments] = useState<IndividualPayment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -60,13 +61,18 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
   useEffect(() => {
     setLoading(true)
     setError(null)
+    const [y, m] = selectedMonth.split('-').map(Number)
+    const start = new Date(y, m - 1, 1).toISOString().split('T')[0]
+    const end = new Date(y, m, 0).toISOString().split('T')[0]
     Promise.all([
       getTransactions({ bill_month: `${selectedMonth}-01` }),
       getFixedCosts(selectedYear),
+      getIndividualPayments({ date_from: start, date_to: end }),
     ])
-      .then(([txns, costs]) => {
+      .then(([txns, costs, payments]) => {
         setTransactions(txns)
         setFixedCosts(costs)
+        setIndividualPayments(payments)
       })
       .catch(() => setError('Failed to load data'))
       .finally(() => setLoading(false))
@@ -111,6 +117,11 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
     }
     return Array.from(map.values()).sort((a, b) => b.total - a.total)
   }, [transactions])
+
+  const paymentsTotal = useMemo(
+    () => individualPayments.reduce((sum, p) => sum + p.amount, 0),
+    [individualPayments],
+  )
 
   const topCategory = spendingByCategory[0]
   const maxCategoryAmount = spendingByCategory[0]?.total ?? 1
@@ -351,6 +362,68 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Individual Payments */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Individual Payments</CardTitle>
+            <Button variant="ghost" size="xs" onClick={() => onNavigate('individual-payments')}>
+              Manage
+              <ArrowRight />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {individualPayments.length === 0 ? (
+            <div className="flex flex-col items-center gap-4 py-8">
+              <p className="text-sm text-muted-foreground">No payments for this month</p>
+              <Button variant="outline" size="sm" onClick={() => onNavigate('individual-payments')}>
+                Add payment
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {individualPayments.map((p, i) => (
+                <div key={p.id}>
+                  <div className="flex items-center gap-3 py-2">
+                    <div
+                      className="h-8 w-8 flex-shrink-0 rounded-lg flex items-center justify-center text-sm"
+                      style={{
+                        backgroundColor: p.category?.color
+                          ? `${p.category.color}18`
+                          : 'oklch(var(--muted))',
+                      }}
+                    >
+                      {p.category?.icon ?? '💳'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{p.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(p.date + 'T00:00:00').toLocaleDateString('pt-BR', {
+                          day: '2-digit',
+                          month: 'short',
+                        })}
+                        {p.category && <span className="mx-1">·</span>}
+                        {p.category?.name}
+                      </p>
+                    </div>
+                    <span className="text-sm font-medium text-foreground flex-shrink-0">
+                      {formatCurrency(p.amount)}
+                    </span>
+                  </div>
+                  {i < individualPayments.length - 1 && <Separator />}
+                </div>
+              ))}
+              <Separator className="my-2" />
+              <div className="flex items-center justify-between py-1">
+                <span className="text-sm font-medium text-foreground">Total</span>
+                <span className="text-sm font-semibold text-foreground">{formatCurrency(paymentsTotal)}</span>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Installment forecast */}
       {forecast.length > 0 && (

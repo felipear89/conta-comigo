@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import categories, imports, transactions, fixed_costs, forecast
+from app.api.routes import categories, imports, transactions, fixed_costs, forecast, individual_payments
 from app.core.config import settings
 
 _openapi_enabled = not settings.is_production
@@ -26,6 +26,7 @@ app.include_router(transactions.router)
 app.include_router(categories.router)
 app.include_router(fixed_costs.router)
 app.include_router(forecast.router)
+app.include_router(individual_payments.router)
 
 
 @app.get("/health")

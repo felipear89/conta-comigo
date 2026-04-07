@@ -6,6 +6,7 @@ import type {
   FixedCostOverride,
   ForecastMonth,
   ImportPreviewTransaction,
+  IndividualPayment,
   Transaction,
 } from '@/types'
 
@@ -209,6 +210,63 @@ export async function deleteFixedCostOverride(costId: string, month: number): Pr
     headers,
   })
   if (!res.ok) throw new Error('Failed to delete override')
+}
+
+// ── Individual Payments ───────────────────────────────────────────────────────
+
+export async function getIndividualPayments(params?: {
+  date_from?: string
+  date_to?: string
+}): Promise<IndividualPayment[]> {
+  const headers = await authHeaders()
+  const q = new URLSearchParams()
+  if (params?.date_from) q.set('date_from', params.date_from)
+  if (params?.date_to) q.set('date_to', params.date_to)
+  const res = await fetch(`${BASE_URL}/individual-payments${q.size ? `?${q}` : ''}`, { headers })
+  if (!res.ok) throw new Error('Failed to fetch payments')
+  return res.json()
+}
+
+export async function createIndividualPayment(data: {
+  description: string
+  amount: number
+  date: string
+  category_id: string | null
+}): Promise<IndividualPayment> {
+  const headers = await jsonHeaders()
+  const res = await fetch(`${BASE_URL}/individual-payments`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.detail ?? 'Failed to create payment')
+  }
+  return res.json()
+}
+
+export async function updateIndividualPayment(
+  id: string,
+  data: Partial<{ description: string; amount: number; date: string; category_id: string | null }>,
+): Promise<IndividualPayment> {
+  const headers = await jsonHeaders()
+  const res = await fetch(`${BASE_URL}/individual-payments/${id}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.detail ?? 'Failed to update payment')
+  }
+  return res.json()
+}
+
+export async function deleteIndividualPayment(id: string): Promise<void> {
+  const headers = await authHeaders()
+  const res = await fetch(`${BASE_URL}/individual-payments/${id}`, { method: 'DELETE', headers })
+  if (!res.ok) throw new Error('Failed to delete payment')
 }
 
 // ── Forecast ─────────────────────────────────────────────────────────────────

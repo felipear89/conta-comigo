@@ -43,6 +43,16 @@ export interface ForecastMonth {
   items: ForecastItem[]
 }
 
+export interface IndividualPayment {
+  id: string
+  description: string
+  amount: number
+  date: string
+  category_id: string | null
+  category?: Category
+  created_at: string
+}
+
 export interface FixedCostOverride {
   month: number
   amount: number

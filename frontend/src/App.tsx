@@ -7,9 +7,10 @@ import { TransactionsPage } from '@/pages/TransactionsPage'
 import { ImportPage } from '@/pages/ImportPage'
 import { CategoriesPage } from '@/pages/CategoriesPage'
 import { FixedCostsPage } from '@/pages/FixedCostsPage'
-import { LayoutDashboard, ArrowLeftRight, Upload, Tag, LogOut, Wallet } from 'lucide-react'
+import { LayoutDashboard, ArrowLeftRight, Upload, Tag, LogOut, Wallet, Banknote } from 'lucide-react'
+import { IndividualPaymentsPage } from '@/pages/IndividualPaymentsPage'
 
-export type Route = 'dashboard' | 'transactions' | 'import' | 'categories' | 'fixed-costs'
+export type Route = 'dashboard' | 'transactions' | 'import' | 'categories' | 'fixed-costs' | 'individual-payments'
 
 const navItems: { label: string; key: Route; icon: React.ElementType }[] = [
   { label: 'Dashboard', key: 'dashboard', icon: LayoutDashboard },
@@ -17,6 +18,7 @@ const navItems: { label: string; key: Route; icon: React.ElementType }[] = [
   { label: 'Credit card statement', key: 'import', icon: Upload },
   { label: 'Categories', key: 'categories', icon: Tag },
   { label: 'Fixed Costs', key: 'fixed-costs', icon: Wallet },
+  { label: 'Individual Payments', key: 'individual-payments', icon: Banknote },
 ]
 
 export default function App() {
@@ -96,6 +98,7 @@ export default function App() {
         )}
         {route === 'categories' && <CategoriesPage />}
         {route === 'fixed-costs' && <FixedCostsPage />}
+        {route === 'individual-payments' && <IndividualPaymentsPage onNavigate={setRoute} />}
       </main>
     </div>
   )

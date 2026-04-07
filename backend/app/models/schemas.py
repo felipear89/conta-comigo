@@ -2,6 +2,10 @@ from pydantic import BaseModel
 from datetime import date
 from typing import Literal
 
+# Alias so patch schemas can annotate a field named `date` with type `date`
+# without the field's default value (None) shadowing the type during annotation evaluation.
+_Date = date
+
 
 class TransactionBase(BaseModel):
     date: date
@@ -89,6 +93,32 @@ class FixedCostPatchRequest(BaseModel):
 
 class FixedCostOverrideUpsertRequest(BaseModel):
     amount: float
+
+
+# ── Individual Payments ───────────────────────────────────────────────────────
+
+class IndividualPaymentOut(BaseModel):
+    id: str
+    description: str
+    amount: float
+    date: date
+    category_id: str | None
+    category: CategoryOut | None = None
+    created_at: str
+
+
+class IndividualPaymentCreateRequest(BaseModel):
+    description: str
+    amount: float
+    date: date
+    category_id: str | None = None
+
+
+class IndividualPaymentPatchRequest(BaseModel):
+    description: str | None = None
+    amount: float | None = None
+    date: _Date | None = None
+    category_id: str | None = None
 
 
 # ── Forecast ──────────────────────────────────────────────────────────────────
