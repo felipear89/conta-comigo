@@ -5,8 +5,8 @@ Expected format (tab-separated, UTF-8 or latin-1):
   Data de Compra | Nome no Cartão | Final do Cartão | Categoria | Descrição |
   Parcela | Valor (em US$) | Cotação (em R$) | Valor (em R$)
 
-Rows with a negative amount (payments, refunds) are excluded.
-Rows where Descrição is empty or Categoria is '-' and amount ≤ 0 are skipped.
+The first data row (bill payment) is skipped.
+All other rows are imported regardless of sign (purchases and refunds).
 """
 import io
 from datetime import date
@@ -26,15 +26,18 @@ async def parse_csv(file: UploadFile) -> list[dict]:
       date (str ISO), description (str), amount (float),
       installment (str | None), bank_category (str | None)
 
-    Only positive-amount rows (actual purchases) are returned.
+    The first row (bill payment) is skipped; all other rows are returned.
+    Negative amounts represent refunds/reversals and are included as-is.
     """
     content = await file.read()
 
     df = _read_dataframe(content)
     _validate_columns(df)
 
-    positive_rows: list[dict] = []
-    reversal_amounts: list[float] = []
+    # Skip the first row (bill payment from previous period)
+    df = df.iloc[1:]
+
+    rows: list[dict] = []
 
     for _, row in df.iterrows():
         try:
@@ -42,15 +45,11 @@ async def parse_csv(file: UploadFile) -> list[dict]:
         except ValueError:
             continue
 
+        if amount == 0:
+            continue
+
         description = str(row[COL_DESCRIPTION]).strip()
         if not description or description.lower() == "nan":
-            continue
-
-        if amount < 0:
-            reversal_amounts.append(abs(amount))
-            continue
-
-        if amount == 0:
             continue
 
         try:
@@ -63,7 +62,7 @@ async def parse_csv(file: UploadFile) -> list[dict]:
         bank_category = str(row[COL_BANK_CATEGORY]).strip()
         installment = str(row[COL_INSTALLMENT]).strip()
 
-        positive_rows.append(
+        rows.append(
             {
                 "date": parsed_date.isoformat(),
                 "description": description,
@@ -72,15 +71,6 @@ async def parse_csv(file: UploadFile) -> list[dict]:
                 "bank_category": None if bank_category in ("-", "nan", "") else bank_category,
             }
         )
-
-    # Cancel out charges that have a matching reversal (same absolute amount, first-match)
-    rows: list[dict] = []
-    for r in positive_rows:
-        try:
-            idx = next(i for i, v in enumerate(reversal_amounts) if abs(v - r["amount"]) < 0.01)
-            reversal_amounts.pop(idx)  # consume the reversal
-        except StopIteration:
-            rows.append(r)
 
     if not rows:
         raise HTTPException(status_code=422, detail="No valid transactions found in CSV")
