@@ -48,8 +48,7 @@ export function TransactionsPage() {
 
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
+  const [billMonth, setBillMonth] = useState('')
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
@@ -68,8 +67,7 @@ export function TransactionsPage() {
     try {
       const txns = await getTransactions({
         category_id: categoryFilter === 'all' ? undefined : categoryFilter,
-        date_from: dateFrom || undefined,
-        date_to: dateTo || undefined,
+        bill_month: billMonth ? `${billMonth}-01` : undefined,
       })
       setTransactions(txns)
     } catch {
@@ -77,7 +75,7 @@ export function TransactionsPage() {
     } finally {
       setLoading(false)
     }
-  }, [categoryFilter, dateFrom, dateTo])
+  }, [categoryFilter, billMonth])
 
   useEffect(() => {
     getCategories().then(setCategories).catch(() => {})
@@ -113,23 +111,7 @@ export function TransactionsPage() {
   }, [selectedIds, filtered])
 
   const totalFiltered = filtered.reduce((sum, t) => sum + t.amount, 0)
-  const hasActiveFilters = !!(search || categoryFilter !== 'all' || dateFrom || dateTo)
-
-  // Detect if filters cover exactly one calendar month for the "select all in month" shortcut
-  const singleMonthLabel = (() => {
-    if (!dateFrom || !dateTo) return null
-    const from = new Date(dateFrom + 'T00:00:00')
-    const to = new Date(dateTo + 'T00:00:00')
-    const firstOfMonth = new Date(from.getFullYear(), from.getMonth(), 1)
-    const lastOfMonth = new Date(from.getFullYear(), from.getMonth() + 1, 0)
-    if (
-      from.getTime() === firstOfMonth.getTime() &&
-      to.getTime() === lastOfMonth.getTime()
-    ) {
-      return from.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })
-    }
-    return null
-  })()
+  const hasActiveFilters = !!(search || categoryFilter !== 'all' || billMonth)
 
   function toggleAll() {
     if (selectedIds.size === filtered.length) {
@@ -188,8 +170,7 @@ export function TransactionsPage() {
   function clearFilters() {
     setSearch('')
     setCategoryFilter('all')
-    setDateFrom('')
-    setDateTo('')
+    setBillMonth('')
   }
 
   return (
@@ -222,18 +203,9 @@ export function TransactionsPage() {
         </div>
 
         <Input
-          type="date"
-          value={dateFrom}
-          onChange={(e) => setDateFrom(e.target.value)}
-          className="w-40"
-        />
-
-        <span className="text-muted-foreground text-sm">→</span>
-
-        <Input
-          type="date"
-          value={dateTo}
-          onChange={(e) => setDateTo(e.target.value)}
+          type="month"
+          value={billMonth}
+          onChange={(e) => setBillMonth(e.target.value)}
           className="w-40"
         />
 
@@ -265,16 +237,6 @@ export function TransactionsPage() {
           <span className="text-sm font-medium text-foreground">
             {selectedIds.size} {selectedIds.size === 1 ? 'transaction' : 'transactions'} selected
           </span>
-
-          {singleMonthLabel && selectedIds.size < filtered.length && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSelectedIds(new Set(filtered.map((t) => t.id)))}
-            >
-              Select all {filtered.length} in {singleMonthLabel}
-            </Button>
-          )}
 
           <div className="ml-auto flex items-center gap-2">
             {confirmDelete ? (
